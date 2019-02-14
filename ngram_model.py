@@ -5,11 +5,14 @@ import nltk
 from tqdm import tqdm
 import operator
 import numpy as np
+import sys
 
-def preprocess(tweet_list, users, target_values):
+ngram_dict = {}
+
+def preprocess(tweet_list, users, target_values, mode="word"):
 	new_list = []
 
-	for tweet in tqdm(tweet_list):
+	for tweet in tweet_list:
 		for word in tweet:
 			if "https://" in word or "http://" in word:
 				index = tweet.index(word)
@@ -38,6 +41,22 @@ def preprocess(tweet_list, users, target_values):
 
 		count += 1
 
+	if mode == "char":
+		user_tweets = []
+		for user_text in user_tweet_text:
+			char_tweets = []
+			for i in range(len(user_text)): # user_text[i] represents a word in tweet
+				for char in user_text[i]:
+					char_tweets.append(char)
+
+				if user_text[i] != "<ENDOFTWEET>":
+					if user_text[i+1] != "<ENDOFTWEET>":
+						char_tweets.append(" ")
+
+			user_tweets.append(char_tweets)
+
+		user_tweet_text = user_tweets
+
 	user_list = []
 	user_count = 0
 
@@ -50,16 +69,32 @@ def preprocess(tweet_list, users, target_values):
 	return user_tweet_text, user_list
 
 
+############################################################################################
+def ngram_extract(tweets, n, mode):
+	global ngram_dict
+	df_dict = {} #document freq dict
 
-def ngram_extract(tweets, n):
-	ngram_dict = {}
+	if mode == "training":
+		for i in tqdm(range(len(tweets))):
+			output = list(ngrams(tweets[i], n))
+			fdist = nltk.FreqDist(output)
 
-	for i in tqdm(range(len(tweets))):
-		output = list(ngrams(tweets[i], n))
-		fdist = nltk.FreqDist(output)
+			for k, v in fdist.items():
+				ngram_dict[k] = 0
 
-		for k, v in fdist.items():
-			ngram_dict[k] = 0
+				try:
+					df_dict[k] = df_dict[k] + 1
+				except:
+					df_dict[k] = 1
+
+
+		new_dict = ngram_dict.copy()
+
+		for k, v in df_dict.items():
+			if v < 3:
+				new_dict.pop(k)
+
+		ngram_dict = new_dict
 
 	user_ngram_vectors = []
 
@@ -69,26 +104,29 @@ def ngram_extract(tweets, n):
 		fdist = nltk.FreqDist(output)
 
 		for k, v in fdist.items():
-			dict[k] = v
+			try:
+				dict[k] = dict[k] + int(v)
+			except:
+				pass
 
-		user_ngram_vectors.append(dict.values())
+		user_ngram_vectors.append(list(dict.values()))
 
 	return user_ngram_vectors
 
 
-
-def get_ngrams():
-	n = 2
+############################################################################################
+def get_ngrams(n, mode="word"):
 
 	training_tweets, training_users, training_target_values = readData(FLAGS.training_data_path)
 	test_tweets, test_users, test_target_values = readData(FLAGS.test_data_path)
 
-	training_tweets, training_users = preprocess(training_tweets, training_users, training_target_values)
-	test_tweets, test_users = preprocess(test_tweets, test_users, test_target_values)
+	training_tweets, training_users = preprocess(training_tweets, training_users, training_target_values, mode)
+	test_tweets, test_users = preprocess(test_tweets, test_users, test_target_values, mode)
 
 
-	training_ngrams = ngram_extract(training_tweets, n)
-	test_ngrams = ngram_extract(test_tweets, n)
+	training_ngrams = ngram_extract(training_tweets, n, mode="training")
+	test_ngrams = ngram_extract(test_tweets, n, mode="test")
 
-	return training_ngrams, training_users, test_ngrams, test_users
+
+	return list(training_ngrams), list(training_users), list(test_ngrams), list(test_users)
 

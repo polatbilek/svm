@@ -9,8 +9,8 @@ class flags(object):
 
 		#input file paths
 		self.word_embed_path = "/home/cvrg/darg/glove/glove.twitter.27B.200d.txt" #change word embedding size too
-		self.training_data_path = "/home/darg2/Desktop/turkish_tweets_dataset_training"
-		self.test_data_path = "/home/darg2/Desktop/turkish_tweets_dataset_test"
+		self.training_data_path = "/home/darg2/Dropbox/PAN@CLEF2018/pan18-author-profiling-training-2018-02-27"
+		self.test_data_path = "/home/darg2/Dropbox/PAN@CLEF2018/pan18-author-profiling-test"
 		self.char_embed_path = "/home/cvrg/darg/glove/char_embeddings.27B.25d.txt"
 
 
@@ -22,7 +22,7 @@ class flags(object):
 
 
 		#optimization parameters
-		self.lang = "tr"
+		self.lang = "en"
 		self.model_save_threshold = 0.75
 		self.optimize = False #if true below values will be used for hyper parameter optimization, or if testing is run: all the models in model_path will be tested
 							 #if false hyperparameters specified in "model hyperparameters" will be used, and for testing model with model_name and model_path will be used
